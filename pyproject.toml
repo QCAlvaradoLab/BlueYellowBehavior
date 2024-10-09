@@ -1,0 +1,11 @@
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+reportArgumentType = "warning"
+reportCallIssue = "warning"
+reportOptionalMemberAccess = "warning"
+
+reportOptionalIterable = "none"
+reportOptionalSubscript = "none"
+reportAttributeAccessIssue = "none"
