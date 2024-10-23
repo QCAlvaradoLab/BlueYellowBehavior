@@ -41,7 +41,7 @@ def main():
 
 def main_alt():
     input = 'AllFightClubScorelogs/BlueFishinBlue'
-    output = 'output5'
+    output = 'outputs/output8'
     subject = 'Blue'
     env = 'Blue'
     color_map = {
@@ -61,25 +61,32 @@ def main_alt():
     # behaviors2.create_markov_chain_graph(attach_legend=False)
 
     input = 'BlueFishCategorical'
-    output = 'categorical_output8'
+    output = 'outputs/categorical_output22'
+
     color_map = {
-        'AGGRESSIVE': '#ff0000',
-        'REPRODUCTIVE': '#00ff00',
-        'AVERSIVE': 'blue'
+        'ATTACK_BLUE': 'aqua',
+        'ATTACK_YELLOW': 'chartreuse',
+        'ATTACK_\\U2640': '#7f03fc',
+        'BLUE_LATERAL_DISPLAY': 'cornflowerblue',
+        'CHASE_\\U2640': 'firebrick1',
+        'CHASE_\\U2642': '#fcba03',
+        'DIG': 'darksalmon',
+        'FLEE_FROM_\\U2640': '#88fc03',
+        'FLEE_FROM_\\U2642': '#6eb8b8',
+        'FRONTAL_DISPLAY': 'deeppink',
+        'LEAD_SWIM': 'gold2',
+        'POT_ENTRY': '#b8906e',
+        'POT_EXIT': '#8a694c',
+        'QUIVER_AT_\\U2640': '#c4be97',
+        'QUIVER_AT_\\U2642': '#7a765d',
+        'YELLOW_LATERAL_DISPLAY': '#c9b849',
+        'DEFAULT': 'white'
     }
-    # color_map = {
-    #     'ATTACK_BLUE': 'aqua',
-    #     'ATTACK_YELLOW': 'chartreuse',
-    #     'BLUE_LATERAL_DISPLAY': 'cornflowerblue',
-    #     'DIG': 'darksalmon',
-    #     'FORAGING': 'deeppink',
-    #     'POT_ENTRY/EXIT': 'gold2',
-    #     'CHASE_\U2640': 'firebrick1',
-    #     'CHASE_\U2642': 'firebrick1',
-    #     'DEFAULT': 'antiquewhite'
-    # }
-    behaviors3 = BehaviorTransitionData(input, output, subject, env, color_map, const.BEHAVIORAL_CATEGORY)
-    behaviors3.create_markov_chain_graph(attach_legend=False)
+
+    # behaviors3 = BehaviorTransitionData(input, output, subject, '', color_map, const.BEHAVIORAL_CATEGORY)
+    # behaviors3.create_markov_chain_graph(attach_legend=False)
+    # behaviors3.output_dfs_as_csvs()
+
 
 
 if __name__ == '__main__':
