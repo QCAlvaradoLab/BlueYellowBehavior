@@ -1,4 +1,5 @@
 import os
+from re import A
 import string
 import math
 import random
@@ -19,7 +20,8 @@ class BehaviorTransitionData:
         subject: str,
         environment: str,
         color_map: dict[str, str],
-        group_by: str = 'BASIC'
+        group_by: str = 'BASIC',
+        edge_visibility_threshold: float = 0.05
     ):
         raw_data = import_data_from_dir(input_dir_path)
         trans_df_formatted, behave_df_formatted = format_data(raw_data, group_by)
@@ -30,10 +32,7 @@ class BehaviorTransitionData:
         self.subject = subject
         self.environment = environment
         self.group_by = group_by
-
-        # for _, val in color_map.items():
-        #     if not is_valid_color_hex(val):
-        #         raise Exception(f'Error: Invalid hexcode in color mapping -> {val}')
+        self.edge_visibility_threshold = edge_visibility_threshold
 
         self.color_map = color_map
         self.color_map['DEFAULT'] = self.__get_color('DEFAULT')
@@ -42,56 +41,85 @@ class BehaviorTransitionData:
 
         self.output_dir_path = output_dir_path
 
+    def output_dfs_as_csvs(self):
+        self.transition_df.to_csv(self.output_dir_path + f'/{self.group_by}/transition_df.csv', index=False)
+        self.behavior_df.to_csv(self.output_dir_path + f'/{self.group_by}/behavior_df.csv', index=False)
 
     def create_markov_chain_graph(self, attach_legend: bool | None = None):
-        graph_list: list[gv.Digraph] = [self.__init_new_digraph(hour=1 if self.group_by == 'TIME' else None)]
+        graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
         behavior_list: list[list[tuple[str, str, str, float]]] = [[]]
+        color_map_categorical = {
+            'AGGRESSIVE': '#ff0000',
+            'REPRODUCTIVE': '#00ff00',
+            'AVERSIVE': '#0000ff'
+        }
+        behavior_map = {}
+        sub_graphs: dict[str, gv.Digraph] = dict()
+        if self.group_by == 'BEHAVIORAL_CATEGORY':
+            behavior_map = map_two_columns(self.behavior_df, 'BEHAVIOR', 'BEHAVIORAL_CATEGORY')
+            self.__set_color_gradients(color_map_categorical, 'BEHAVIORAL_CATEGORY', 'BEHAVIOR')
 
-        for _, row in self.behavior_df.iterrows():
+        for idx, row in self.behavior_df.iterrows():
             behavior_name = str(row['BEHAVIOR'])
             category_name = str(row[const.BEHAVIORAL_CATEGORY]) if self.group_by == const.BEHAVIORAL_CATEGORY else 'None'
 
-            color_key = category_name if category_name != 'None' and self.group_by == const.BEHAVIORAL_CATEGORY else behavior_name
-            color_to_use = self.__get_color(color_key)
+            color_to_use = self.__get_color(behavior_name)
 
             raw_frequency = row['BEHAVIOR_PROBABILITY']
             prob = round_percent(raw_frequency)
+            node_size = constrain_value(raw_frequency * 10, 0.5, 3)
             graph_idx = 0
 
-            if self.group_by == 'TIME':
-                hour = row['HOUR_PERFORMED']
-                if hour > 3:
-                    continue
-                if len(graph_list) < hour:
-                    graph_list.append(self.__init_new_digraph(hour=int(hour)))
-                    behavior_list.append([])
-                graph_idx = hour - 1
-                # behavior_list[graph_idx].append((behavior_name, color_to_use, prob))
-            # elif self.group_by == 'BEHAVIORAL_CATEGORY':
-            #     # TODO!
-            #     return
-            # else:
+            if self.group_by == 'BEHAVIORAL_CATEGORY':
+                if sub_graphs.get(category_name) is None:
+                    sub_graphs[category_name] = self.__init_new_digraph(add_label=False, cluster='true', rankdir='TB', idx=idx)
+                sub_graphs[category_name].node(
+                    name=f'{behavior_name}',
+                    color=color_to_use,
+                    label=' ', # If not provided, node name appears on node. Setting it to be a single whitespace character allows for nodes with no text
+                    fontcolor='black',
+                    height=str(raw_frequency),
+                    shape='circle',
+                    style='filled',
+                    width=str(node_size)
+                )
+
+            else:
+                if self.group_by == 'TIME':
+                    hour = row['HOUR_PERFORMED']
+                    if hour > 3:
+                        continue
+                    if len(graph_list) < hour:
+                        graph_list.append(self.__init_new_digraph(add_label=True, hour=int(hour)))
+                        behavior_list.append([])
+                    graph_idx = hour - 1
+
+                graph_list[graph_idx].node(
+                    name=f'{behavior_name}',
+                    color=color_to_use,
+                    label=' ', # If not provided, node name appears on node. Setting it to be a single whitespace character allows for nodes with no text
+                    fontcolor='black',
+                    height=str(raw_frequency),
+                    shape='circle',
+                    style='filled',
+                    width=str(node_size)
+                )
+
             behavior_list[graph_idx].append((behavior_name, str(category_name), color_to_use, prob))
 
-            node_size = constrain_value(raw_frequency * 10, 0.5, 3)
-            graph_list[graph_idx].node(
-                name=f'{behavior_name}',
-                color=color_to_use,
-                label=' ', # If not provided, node name appears on node. Setting it to be a single whitespace character allows for nodes with no text
-                fontcolor='black',
-                height=str(raw_frequency),
-                shape='circle',
-                style='filled',
-                width=str(node_size)
-            )
+        for _, sub_graph in sub_graphs.items():
+            graph_list[0].subgraph(sub_graph)
 
         for _, row in self.transition_df.iterrows():
             current_behavior = str(row['BEHAVIOR'])
             next_behavior = str(row['BEHAVIOR_NEXT'])
-            category_name = str(row[const.BEHAVIORAL_CATEGORY]) if self.group_by == const.BEHAVIORAL_CATEGORY else 'None'
 
-            color_key = category_name if category_name != 'None' and self.group_by == const.BEHAVIORAL_CATEGORY else current_behavior
-            color_to_use = self.__get_color(color_key)
+            color_to_use = self.__get_color(current_behavior)
+            if self.group_by == 'BEHAVIORAL_CATEGORY':
+                current_cat = behavior_map[current_behavior][0]
+                next_cat = behavior_map[next_behavior][0]
+                same_category = current_cat == next_cat
+                color_to_use = color_map_categorical[current_cat] if same_category else 'black'
 
             raw_frequency = row['TRANSITION_PROBABILITY']
             weight = round_percent(raw_frequency)
@@ -103,11 +131,10 @@ class BehaviorTransitionData:
                     continue
                 graph_idx = hour - 1
 
-            # if weight < 0.5:
-            if weight < 5.0:
+            if weight < self.edge_visibility_threshold * 100:
                 continue
 
-            edge_width = str(constrain_value(raw_frequency * 20, 1, 10))
+            edge_width = str(constrain_value(raw_frequency * 20, 0.5, 7))
             graph_list[graph_idx].edge(
                 tail_name=current_behavior,
                 head_name=next_behavior,
@@ -124,7 +151,7 @@ class BehaviorTransitionData:
             file_name += f'Hour{idx+1}' if self.group_by == 'TIME' else ''
 
             if attach_legend is not None:
-                legend = self.__create_graph_legend(behavior_list[idx])
+                legend = self.__create_graph_legend(behavior_list[idx], show_category=self.group_by == 'BEHAVIORAL_CATEGORY')
                 if attach_legend is True:
                     legend_lines = str(legend).splitlines()
                     legend_lines = legend_lines[1:-1]
@@ -143,7 +170,7 @@ class BehaviorTransitionData:
             g.render(
                 filename=f'{output_dir}/{file_name}',
                 quiet=True,
-                format='svg',
+                format='jpeg',
                 cleanup=True
             )
 
@@ -194,26 +221,50 @@ class BehaviorTransitionData:
     def __get_color(self, key: str, default: str = 'antiquewhite') -> str:
         return self.color_map[key] if self.color_map.get(key) is not None else default
 
+    def __set_colors_by_list(self, values: list[str], colors: list[str]):
+        if len(values) != len(colors):
+            raise Exception('bruh the list args are different lengths')
+        for idx in range(len(values)):
+            self.color_map[values[idx]] = colors[idx]
 
-    def __init_new_digraph(self, prob_threshold: float = 0.005, hour: float | None = None) -> gv.Digraph:
-        g = gv.Digraph(f'{self.subject} Fish Behaviors in {self.environment} Environment{f" (Hour {hour})" if hour is not None else ""}')
-        bgcolor = self.__get_color(f'ENV_{self.environment.upper()}')
+    def __set_color_gradients(self, base_color_map: dict[str, str], color_column_get: str, color_column_set: str):
+        col_map = map_two_columns(self.behavior_df, color_column_get, color_column_set)
+        for key, val_list in col_map.items():
+            color = base_color_map.get(key)
+            if color is not None:
+                color_hex = color_to_num(color)
+                gradient = make_color_gradient(color_hex, len(val_list))
+                self.__set_colors_by_list(val_list, gradient)
+
+
+    def __init_new_digraph(self, add_label: bool, cluster: str = 'true', rankdir: str = 'LR', idx: int | None = None, hour: float | None = None) -> gv.Digraph:
+        graph_title = f'{self.subject} Fish Behaviors{f' {idx}' if idx is not None else ''}'
+        if len(self.environment) > 0:
+            graph_title += f' in {self.environment} Environment'
+        if hour is not None:
+            graph_title += f' (Hour {hour})'
+
+        g = gv.Digraph(graph_title)
+        label = f'{graph_title}: Transition Probability >{self.edge_visibility_threshold * 100}%'
+        bgcolor = self.subject.upper() if self.group_by == 'BEHAVIORAL_CATEGORY' else self.environment.upper()
+        bgcolor = self.__get_color(f'ENV_{bgcolor}')
         g.attr(
-            fixed_size='true',
+            fixed_size='false',
             overlap='scale',
             size='50',
             bgcolor=bgcolor,
             fontcolor='black',
-            packMode='graph',
+            packMode='clust',
             compound='true',
-            label=f'{self.subject} Fish in {self.environment} Environment{f" (Hour {hour})" if hour is not None else ""}: Transition Probability >0.5%',
+            label=(label if add_label is True else ""),
             fontname='fira-code',
             labelloc='t',
-            rankdir='LR',
-            cluster='true'
+            rank='source' if rankdir == 'TB' else None,
+            rankdir=rankdir,
+            cluster=cluster,
+            peripheries='0'
         )
         return g
-
 
 
 def import_data_from_dir(dir_path: str, column_names: list[str] = []) -> dict[str, pd.DataFrame]:
@@ -253,7 +304,8 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
         sub_transition['BEHAVIOR_NEXT'] = sub_transition['BEHAVIOR'].shift(-1)
 
         # comment line below when we figure out minutes to seconds conversions
-        sub_df['Time'] = sub_df['Time'].map(lambda _: 1)
+        if sub_df.get('frame') is not None:
+            sub_df['Time'] = sub_df['Time'].map(lambda _: 1)
         time_next = sub_df['Time'].shift(-1)
         sub_transition['BEHAVIOR_DURATION'] = time_next - sub_df['Time']
         sub_behavior['BEHAVIOR_DURATION'] = time_next = sub_df['Time']
@@ -263,19 +315,13 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
             sub_transition['HOUR_PERFORMED'] = sub_df['Time'].transform(lambda x: math.ceil(x / 3600))
 
             transitions[name] = sub_transition.groupby(['BEHAVIOR', 'BEHAVIOR_NEXT', 'HOUR_PERFORMED']).count()
-            # transitions[name].rename(columns={ 'BEHAVIOR_DURATION': 'TRANSITION_COUNTS' }, inplace=True)
-
             behaviors[name] = sub_behavior.groupby(['BEHAVIOR', 'HOUR_PERFORMED']).count()
-            # behaviors[name].rename(columns={ 'BEHAVIOR_DURATION': 'BEHAVIOR_COUNTS' }, inplace=True)
         elif group_by == 'BEHAVIORAL_CATEGORY':
             transitions[name] = sub_transition.groupby([const.BEHAVIOR, const.BEHAVIOR_NEXT, const.BEHAVIORAL_CATEGORY]).count()
             behaviors[name] = sub_behavior.groupby([const.BEHAVIOR, const.BEHAVIORAL_CATEGORY]).count()
         else:
             transitions[name] = sub_transition.groupby(['BEHAVIOR', 'BEHAVIOR_NEXT']).count()
-            # transitions[name].rename(columns={ 'BEHAVIOR_DURATION': 'TRANSITION_COUNTS' }, inplace=True)
-
             behaviors[name] = sub_behavior.groupby(['BEHAVIOR']).count()
-            behaviors[name].rename(columns={ 'BEHAVIOR_DURATION': 'BEHAVIOR_COUNTS' }, inplace=True)
 
         transitions[name].rename(columns={ 'BEHAVIOR_DURATION': 'TRANSITION_COUNTS' }, inplace=True)
         behaviors[name].rename(columns={ 'BEHAVIOR_DURATION': 'BEHAVIOR_COUNTS' }, inplace=True)
@@ -285,7 +331,6 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
 
     behavior_dataframe = pd.concat(behaviors.values(), sort=False)
     behavior_dataframe.fillna(0, inplace=True)
-    # print(behavior_dataframe)
 
     if group_by == const.TIME:
         transition_dataframe = pd.DataFrame(transition_dataframe.groupby(['BEHAVIOR', 'BEHAVIOR_NEXT', 'HOUR_PERFORMED']).sum())
@@ -345,24 +390,22 @@ def is_valid_color_hex(hex: str) -> bool:
         all(c in string.hexdigits for c in hex[1:]),
     ])
 
-
+# Color functions
 def random_hex_char() -> str:
     return hex(random.randrange(0, 16))
 def random_color_hex(seed: int | None = None) -> str:
     if seed is not None:
         random.seed(seed)
-    # MAX_SIZE is equal to 0x1000000 in hexadecimal, and is used for randrange since it picks a value exclusive of the end boundary
-    # MAX_SIZE - 1 is equal to 0xFFFFFF in hexidecimal, which is the highest color value possible
-    MAX_SIZE = 256 * 256 * 256
-    result = hex(random.randrange(0, MAX_SIZE))[2:] # Slice off the '0x' from the front so we can pad with 0's if needed
-    result = '#' + result.rjust(6, '0')
-
-    return result
-def make_color_gradient(hex: str, partitions: int = 3) -> list[str]:
-    gradient = [hex]
-    p = 1
-    # while p < partitions:
-
+    return num_to_color(random.randrange(0, const.MAX_HEX_VALUE + 1))
+def num_to_color(val: int) -> str:
+    return '#' + (hex(val)[2:]).rjust(6, '0') # Slice off the '0x' from the front so we can pad with 0's if needed
+def color_to_num(val: str) -> int:
+    return int('0x' + val[1:], 16)
+def make_color_gradient(base_hex: int, partitions: int) -> list[str]:
+    gradient: list[str] = []
+    increment = math.ceil(const.MAX_HEX_VALUE / (partitions + 1))
+    for i in range(increment, const.MAX_HEX_VALUE, increment):
+        gradient.append(num_to_color(base_hex | i))
     return gradient
 
 # Used for standardizing user input data to prevent reference errors
@@ -395,3 +438,22 @@ def upper_snake(s: str) -> str:
 # Formats strings from 'XXXX_XXXX_XXXX' to 'Xxxx xxxx xxxx'
 def split_to_spaced(s: str) -> str:
     return ' '.join(str(s).lower().capitalize().split('_'))
+
+def map_two_columns(df: pd.DataFrame, keys_col: str, values_col: str) -> dict[str, list[str]]:
+    results = dict()
+    df_dict = df.to_dict('records')
+
+    for record in df_dict:
+        if results.get(record[keys_col]) == None:
+            results[record[keys_col]] = []
+        results[record[keys_col]].append(record[values_col])
+
+    return results
+
+def hms_to_seconds(time_str: str, no_hours: bool = False) -> float:
+    mapped_over = list(map(float, time_str.split(':')))
+    while (len(mapped_over) < 3):
+        mapped_over.insert(0, 0)
+    h, m, s = mapped_over
+
+    return h * 3600 + m * 60 + s
