@@ -1,13 +1,10 @@
 import os
-from re import A
-import string
 import math
 import random
-import time
+from string import hexdigits
 
 import pandas as pd
 import graphviz as gv
-import numpy as np
 
 from utils import constants as const
 
@@ -42,8 +39,8 @@ class BehaviorTransitionData:
         self.output_dir_path = output_dir_path
 
     def output_dfs_as_csvs(self):
-        self.transition_df.to_csv(self.output_dir_path + f'/{self.group_by}/transition_df.csv', index=False)
-        self.behavior_df.to_csv(self.output_dir_path + f'/{self.group_by}/behavior_df.csv', index=False)
+        self.transition_df.to_csv(f'{self.output_dir_path}/{self.group_by}/transition_df.csv', index=False)
+        self.behavior_df.to_csv(f'{self.output_dir_path}/{self.group_by}/behavior_df.csv', index=False)
 
     def create_markov_chain_graph(self, attach_legend: bool | None = None):
         graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
@@ -57,7 +54,6 @@ class BehaviorTransitionData:
         sub_graphs: dict[str, gv.Digraph] = dict()
         if self.group_by == 'BEHAVIORAL_CATEGORY':
             behavior_map = map_two_columns(self.behavior_df, 'BEHAVIOR', 'BEHAVIORAL_CATEGORY')
-            self.__set_color_gradients(color_map_categorical, 'BEHAVIORAL_CATEGORY', 'BEHAVIOR')
 
         for idx, row in self.behavior_df.iterrows():
             behavior_name = str(row['BEHAVIOR'])
@@ -163,14 +159,13 @@ class BehaviorTransitionData:
                     legend.render(
                         filename=f'{output_dir}/Legends/{file_name}_Legend',
                         quiet=True,
-                        format='jpeg',
+                        format='svg',
                         cleanup=True
                     )
-            g.save(f'{output_dir}/source_code.gv')
             g.render(
                 filename=f'{output_dir}/{file_name}',
                 quiet=True,
-                format='jpeg',
+                format='svg',
                 cleanup=True
             )
 
@@ -246,20 +241,20 @@ class BehaviorTransitionData:
 
         g = gv.Digraph(graph_title)
         label = f'{graph_title}: Transition Probability >{self.edge_visibility_threshold * 100}%'
-        bgcolor = self.subject.upper() if self.group_by == 'BEHAVIORAL_CATEGORY' else self.environment.upper()
-        bgcolor = self.__get_color(f'ENV_{bgcolor}')
+        bgcolor = 'DEFAULT' if self.group_by == 'BEHAVIORAL_CATEGORY' else f'ENV_{self.environment.upper()}'
+        bgcolor = self.__get_color(bgcolor)
         g.attr(
-            fixed_size='false',
+            fixed_size='true',
             overlap='scale',
             size='50',
             bgcolor=bgcolor,
             fontcolor='black',
-            packMode='clust',
+            packMode='graph',
             compound='true',
             label=(label if add_label is True else ""),
             fontname='fira-code',
             labelloc='t',
-            rank='source' if rankdir == 'TB' else None,
+            rank='source',
             rankdir=rankdir,
             cluster=cluster,
             peripheries='0'
@@ -377,7 +372,7 @@ def constrain_value(val: float, min_val: float, max_val: float) -> float:
 
 # Untyped args to avoid unhelpful type errors from PyRight
 def round_percent(val, sig_figures = 1) -> float:
-    return np.round(val * 100, sig_figures)
+    return round(val * 100, sig_figures)
 
 
 # All color hexcode inputs should be in the format '#XXXXXX' where 'X' is a valid hexadecimal character
@@ -387,7 +382,7 @@ def is_valid_color_hex(hex: str) -> bool:
     return all([
         hex.startswith('#'),
         len(hex) == 7,
-        all(c in string.hexdigits for c in hex[1:]),
+        all(c in hexdigits for c in hex[1:]),
     ])
 
 # Color functions
