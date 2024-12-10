@@ -13,7 +13,7 @@ def main():
         if len(argv) != 1:
             raise Exception()
 
-        config = object()
+        config = dict()
         with open(argv[0]) as file:
             config = json.load(file)
             config = format_json_input(config)
@@ -40,52 +40,64 @@ def main():
 
 
 def main_alt():
-    input = 'AllFightClubScorelogs/BlueFishinBlue'
-    output = 'outputs/output8'
-    subject = 'Blue'
-    env = 'Blue'
+    input = 'AllFightClubScorelogs'
+    output = 'outputs/final_drafts/draft_7'
     color_map = {
-        'BITE': 'aqua',
-        'HEAD_TO_HEAD': 'chartreuse',
-        'LATERAL_DISPLAY': 'cornflowerblue',
-        'FLEE': 'darksalmon',
-        'FORAGING': 'deeppink',
-        'POT_ENTRY/EXIT': 'gold2',
-        'CHASE': 'firebrick1',
-        'DEFAULT': 'antiquewhite'
-    }
-    # behaviors = BehaviorTransitionData(input, output, subject, env, color_map)
-    # behaviors.create_markov_chain_graph(attach_legend=False)
-
-    # behaviors2 = BehaviorTransitionData(input, output, subject, env, color_map, 'TIME')
-    # behaviors2.create_markov_chain_graph(attach_legend=False)
-
-    input = 'BlueFishCategorical'
-    output = 'outputs/categorical_output22'
-
-    color_map = {
-        'ATTACK_BLUE': 'aqua',
-        'ATTACK_YELLOW': 'chartreuse',
-        'ATTACK_\\U2640': '#7f03fc',
-        'BLUE_LATERAL_DISPLAY': 'cornflowerblue',
-        'CHASE_\\U2640': 'firebrick1',
-        'CHASE_\\U2642': '#fcba03',
-        'DIG': 'darksalmon',
-        'FLEE_FROM_\\U2640': '#88fc03',
-        'FLEE_FROM_\\U2642': '#6eb8b8',
-        'FRONTAL_DISPLAY': 'deeppink',
-        'LEAD_SWIM': 'gold2',
-        'POT_ENTRY': '#b8906e',
-        'POT_EXIT': '#8a694c',
-        'QUIVER_AT_\\U2640': '#c4be97',
-        'QUIVER_AT_\\U2642': '#7a765d',
-        'YELLOW_LATERAL_DISPLAY': '#c9b849',
+        'BITE': '#b52dc8',#'#6817C5',
+        'HEAD_TO_HEAD': '#1565C0',
+        'LATERAL_DISPLAY': '#009688',
+        'FLEE': '#709c3e',#'#55782c',#'#8BC34A',
+        'FORAGING': '#AD1457',
+        'POT_ENTRY/EXIT': '#bf9502',#'#a68100',#'#E85D04',#'#6817C5',
+        'CHASE': '#F44336',#'#3d3d3d',
         'DEFAULT': 'white'
     }
 
-    # behaviors3 = BehaviorTransitionData(input, output, subject, '', color_map, const.BEHAVIORAL_CATEGORY)
-    # behaviors3.create_markov_chain_graph(attach_legend=False)
-    # behaviors3.output_dfs_as_csvs()
+    # Behavior Transition Graphs
+    behaviors = BehaviorTransitionData(f'{input}/BlueFishinBlue', output, 'Blue', 'Blue', color_map)
+    behaviors.create_markov_chain_graph(attach_legend=False)
+    behaviors = BehaviorTransitionData(f'{input}/BlueFishinYellow', output, 'Blue', 'Yellow', color_map)
+    behaviors.create_markov_chain_graph(attach_legend=False)
+    behaviors = BehaviorTransitionData(f'{input}/YellowFishinBlue', output, 'Yellow', 'Blue', color_map)
+    behaviors.create_markov_chain_graph(attach_legend=False)
+    behaviors = BehaviorTransitionData(f'{input}/YellowFishinYellow', output, 'Yellow', 'Yellow', color_map)
+    behaviors.create_markov_chain_graph(attach_legend=False)
+
+    # Behavior Transition Graphs (split by hour)
+    behaviorsByTime = BehaviorTransitionData(f'{input}/BlueFishinBlue', output, 'Blue', 'Blue', color_map, 'TIME')
+    behaviorsByTime.create_markov_chain_graph(attach_legend=False)
+    behaviorsByTime = BehaviorTransitionData(f'{input}/BlueFishinYellow', output, 'Blue', 'Yellow', color_map, 'TIME')
+    behaviorsByTime.create_markov_chain_graph(attach_legend=False)
+    behaviorsByTime = BehaviorTransitionData(f'{input}/YellowFishinBlue', output, 'Yellow', 'Blue', color_map, 'TIME')
+    behaviorsByTime.create_markov_chain_graph(attach_legend=False)
+    behaviorsByTime = BehaviorTransitionData(f'{input}/YellowFishinYellow', output, 'Yellow', 'Yellow', color_map, 'TIME')
+    behaviorsByTime.create_markov_chain_graph(attach_legend=False)
+
+    # Behavior Transition Graphs (nodes grouped by category)
+    color_map = {
+        'ATTACK_BLUE': '#590D22', # Aggressive
+        'ATTACK_YELLOW': '#800F2F', # Aggressive
+        'ATTACK_\\U2640': '#A4133C', # Aggressive
+        'BLUE_LATERAL_DISPLAY': '#C9184A', # Aggressive
+        'CHASE_\\U2640': '#FF4D6D', # Aggressive
+        'CHASE_\\U2642': '#FF758F', # Aggressive
+        'DIG': '#007F5F', # Reproductive
+        'FLEE_FROM_\\U2640': '#00B4D8', # Aversive
+        'FLEE_FROM_\\U2642': '#0077B6', # Aversive
+        'FRONTAL_DISPLAY': '#FF8FA3', # Aggressive
+        'LEAD_SWIM': '#55A630', # Reproductive
+        'POT_ENTRY': '#AACC00', # Reproductive
+        'POT_EXIT': '#2B9348', # Reproductive
+        'QUIVER_AT_\\U2640': '#80B918', # Reproductive
+        'QUIVER_AT_\\U2642': '#FFB3C1', # Aggressive
+        'YELLOW_LATERAL_DISPLAY': '#FFCCD5', # Aggressive
+        'DEFAULT': 'white'
+    }
+    behaviorsByCategory = BehaviorTransitionData('BlueFishCategorical', output, 'Blue', '', color_map, 'BEHAVIORAL_CATEGORY')
+    behaviorsByCategory.create_markov_chain_graph(attach_legend=False)
+    behaviorsByCategory = BehaviorTransitionData('YellowFishCategorical', output, 'Yellow', '', color_map, 'BEHAVIORAL_CATEGORY')
+    behaviorsByCategory.create_markov_chain_graph(attach_legend=False)
+
 
 
 
