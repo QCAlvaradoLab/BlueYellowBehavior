@@ -41,15 +41,15 @@ def main():
 
 def main_alt():
     input = 'AllFightClubScorelogs'
-    output = 'outputs/final_drafts/draft_7'
+    output = 'outputs/final_drafts/draft_8'
     color_map = {
-        'BITE': '#b52dc8',#'#6817C5',
-        'HEAD_TO_HEAD': '#1565C0',
-        'LATERAL_DISPLAY': '#009688',
-        'FLEE': '#709c3e',#'#55782c',#'#8BC34A',
-        'FORAGING': '#AD1457',
-        'POT_ENTRY/EXIT': '#bf9502',#'#a68100',#'#E85D04',#'#6817C5',
-        'CHASE': '#F44336',#'#3d3d3d',
+        'BITE': '#481567',
+        'HEAD_TO_HEAD': '#4179ab',
+        'LATERAL_DISPLAY': '#2aea8f',
+        'FLEE': '#73d05f',
+        'FORAGING': '#7f4dc4',
+        'POT_ENTRY/EXIT': '#b8de29',
+        'CHASE': '#238a8d',
         'DEFAULT': 'white'
     }
 
@@ -75,22 +75,22 @@ def main_alt():
 
     # Behavior Transition Graphs (nodes grouped by category)
     color_map = {
-        'ATTACK_BLUE': '#590D22', # Aggressive
-        'ATTACK_YELLOW': '#800F2F', # Aggressive
-        'ATTACK_\\U2640': '#A4133C', # Aggressive
-        'BLUE_LATERAL_DISPLAY': '#C9184A', # Aggressive
-        'CHASE_\\U2640': '#FF4D6D', # Aggressive
+        'ATTACK_BLUE': '#bd3977', # Aggressive
+        'ATTACK_YELLOW': '#ff00f0', # Aggressive
+        'ATTACK_\\U2640': '#a4133c', # Aggressive
+        'BLUE_LATERAL_DISPLAY': '#e36602', # Aggressive
+        'CHASE_\\U2640': '#ff4d6d', # Aggressive
         'CHASE_\\U2642': '#FF758F', # Aggressive
-        'DIG': '#007F5F', # Reproductive
-        'FLEE_FROM_\\U2640': '#00B4D8', # Aversive
-        'FLEE_FROM_\\U2642': '#0077B6', # Aversive
-        'FRONTAL_DISPLAY': '#FF8FA3', # Aggressive
-        'LEAD_SWIM': '#55A630', # Reproductive
-        'POT_ENTRY': '#AACC00', # Reproductive
-        'POT_EXIT': '#2B9348', # Reproductive
-        'QUIVER_AT_\\U2640': '#80B918', # Reproductive
-        'QUIVER_AT_\\U2642': '#FFB3C1', # Aggressive
-        'YELLOW_LATERAL_DISPLAY': '#FFCCD5', # Aggressive
+        'DIG': '#e5e84a', # Reproductive
+        'FLEE_FROM_\\U2640': '#1d92cc', # Aversive
+        'FLEE_FROM_\\U2642': '#370fbf', # Aversive
+        'FRONTAL_DISPLAY': '#b36042', # Aggressive
+        'LEAD_SWIM': '#c7c92c', # Reproductive
+        'POT_ENTRY': '#f8fc03', # Reproductive
+        'POT_EXIT': '#828501', # Reproductive
+        'QUIVER_AT_\\U2640': '#fcfdbf', # Reproductive
+        'QUIVER_AT_\\U2642': '#ff005c', # Aggressive
+        'YELLOW_LATERAL_DISPLAY': '#ffccd5', # Aggressive
         'DEFAULT': 'white'
     }
     behaviorsByCategory = BehaviorTransitionData('BlueFishCategorical', output, 'Blue', '', color_map, 'BEHAVIORAL_CATEGORY')
