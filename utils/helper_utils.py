@@ -111,11 +111,6 @@ class BehaviorTransitionData:
             next_behavior = str(row['BEHAVIOR_NEXT'])
 
             color_to_use = self.__get_color(current_behavior)
-            if self.group_by == 'BEHAVIORAL_CATEGORY':
-                current_cat = behavior_map[current_behavior][0]
-                next_cat = behavior_map[next_behavior][0]
-                same_category = current_cat == next_cat
-                color_to_use = color_map_categorical[current_cat] if same_category else 'black'
 
             raw_frequency = row['TRANSITION_PROBABILITY']
             weight = round_percent(raw_frequency)
@@ -166,7 +161,7 @@ class BehaviorTransitionData:
                 filename=f'{output_dir}/{file_name}',
                 quiet=True,
                 format='svg',
-                cleanup=True
+                cleanup=False
             )
 
 
