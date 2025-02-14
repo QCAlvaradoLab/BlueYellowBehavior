@@ -41,7 +41,7 @@ def main():
 
 def main_alt():
     input = 'AllFightClubScorelogs'
-    output = 'outputs/final_drafts/draft_8'
+    output = 'outputs/final_drafts/draft_11'
     color_map = {
         'BITE': '#481567',
         'HEAD_TO_HEAD': '#4179ab',
@@ -75,22 +75,22 @@ def main_alt():
 
     # Behavior Transition Graphs (nodes grouped by category)
     color_map = {
-        'ATTACK_BLUE': '#bd3977', # Aggressive
-        'ATTACK_YELLOW': '#ff00f0', # Aggressive
-        'ATTACK_\\U2640': '#a4133c', # Aggressive
-        'BLUE_LATERAL_DISPLAY': '#e36602', # Aggressive
-        'CHASE_\\U2640': '#ff4d6d', # Aggressive
+        'ATTACK_BLUE': '#0000a8', # Aggressive
+        'ATTACK_YELLOW': '#ff2e00', # Aggressive
+        'ATTACK_\\U2640': '#d23105', # Aggressive
+        'BLUE_LATERAL_DISPLAY': '#edfa11', # Aggressive
+        'CHASE_\\U2640': '#73090e', # Aggressive
         'CHASE_\\U2642': '#FF758F', # Aggressive
-        'DIG': '#e5e84a', # Reproductive
-        'FLEE_FROM_\\U2640': '#1d92cc', # Aversive
-        'FLEE_FROM_\\U2642': '#370fbf', # Aversive
-        'FRONTAL_DISPLAY': '#b36042', # Aggressive
-        'LEAD_SWIM': '#c7c92c', # Reproductive
-        'POT_ENTRY': '#f8fc03', # Reproductive
-        'POT_EXIT': '#828501', # Reproductive
-        'QUIVER_AT_\\U2640': '#fcfdbf', # Reproductive
-        'QUIVER_AT_\\U2642': '#ff005c', # Aggressive
-        'YELLOW_LATERAL_DISPLAY': '#ffccd5', # Aggressive
+        'DIG': '#f8bc39', # Reproductive
+        'FLEE_FROM_\\U2640': '#4670e7', # Aversive
+        'FLEE_FROM_\\U2642': '#75fe5c', # Aversive
+        'FRONTAL_DISPLAY': '#fa7e21', # Aggressive
+        'LEAD_SWIM': '#b3ff4b', # Reproductive
+        'POT_ENTRY': '#bbf534', # Reproductive
+        'POT_EXIT': '#2cb6ef', # Reproductive
+        'QUIVER_AT_\\U2640': '#3c3387', # Reproductive
+        'QUIVER_AT_\\U2642': '#42f687', # Aggressive
+        'YELLOW_LATERAL_DISPLAY': '#31133e', # Aggressive
         'DEFAULT': 'white'
     }
     behaviorsByCategory = BehaviorTransitionData('BlueFishCategorical', output, 'Blue', '', color_map, 'BEHAVIORAL_CATEGORY')
