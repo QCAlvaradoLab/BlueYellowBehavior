@@ -28,7 +28,7 @@ def main():
             env = job.get(const.ENV)
             color_map = job.get(const.COLOR_MAP)
             group_by = job.get(const.GROUP_BY)
-            attach_legend = job.get(const.ATTACH_LEGEND)
+            attach_legend = job.get(const.ATTACH_LEGEND) or False
 
             print('Now processing job #{}: {}'.format(idx + 1, job_title))
             data = BehaviorTransitionData(input_folder, output_folder, subject, env, color_map, group_by)
@@ -40,8 +40,8 @@ def main():
 
 
 def main_alt():
-    input = 'AllFightClubScorelogs'
-    output = 'outputs/final_drafts/draft_11'
+    input = 'some/input/folder'
+    output = 'some/output/folder'
     color_map = {
         'BITE': '#481567',
         'HEAD_TO_HEAD': '#4179ab',
