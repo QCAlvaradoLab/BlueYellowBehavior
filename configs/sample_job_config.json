@@ -1,0 +1,42 @@
+{
+  "jobs": [
+    {
+      "input_folder": "AllFightClubScorelogs/BlueFishinBlue",
+      "output_folder": "outputs/BlueFishInBlueEnv_Basic",
+      "job_name": "BlueFishInBlueEnv_Basic",
+      "subject": "Blue",
+      "environment": "Blue",
+      "color_map": {
+        "BITE": "aqua",
+        "HEAD_TO_HEAD": "chartreuse",
+        "LATERAL_DISPLAY": "cornflowerblue",
+        "FLEE": "darksalmon",
+        "FORAGING": "deeppink",
+        "POT_ENTRY/EXIT": "gold2",
+        "CHASE": "firebrick1",
+        "DEFAULT": "antiquewhite"
+      },
+      "group_by": "basic",
+      "attach_legend": false
+    },
+    {
+      "input_folder": "AllFightClubScorelogs/BlueFishinYellow",
+      "output_folder": "outputs/BlueFishInYellowEnv_Time",
+      "job_name": "BlueFishInYellowEnv_Time",
+      "subject": "Blue",
+      "environment": "Yellow",
+      "color_map": {
+        "BITE": "aqua",
+        "HEAD_TO_HEAD": "chartreuse",
+        "LATERAL_DISPLAY": "cornflowerblue",
+        "FLEE": "darksalmon",
+        "FORAGING": "deeppink",
+        "POT_ENTRY/EXIT": "gold2",
+        "CHASE": "firebrick1",
+        "DEFAULT": "antiquewhite"
+      },
+      "group_by": "time",
+      "attach_legend": false
+    }
+  ]
+}

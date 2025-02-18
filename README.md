@@ -1,118 +1,89 @@
-# MarkovChainGeneratorScripts
-Python Scripts for generating markov chain plots/graphs
+# BlueYellowBehavior: Transition Matrix Generator
 
-Project Details:
-- Step 1:
-  - Markov chains for each fish color and environment color permutations (4 chains as of now, 1 graph)
-  - Averaging the 6 replicates for each behavior to occur
-- Step 2:
-  - Markov chains for each environment showing blue and yellow fish behavior (2 chains as of now, 1 graph)
-- Step 3:
-  - Divide up Markov chains from step 1 into behavior for each hour (3 hours total)
+A Python program that creates Transition Matrices using Blue/Yellow Fish data in CSV.
 
-Project Requirements:
-- Be able to run script with minimal input
-  - Should only need to specify CSV file as argument
-  - Config file an option?
-- Script should be able to work with agnostic data
-  - Should handle multiple different types of behaviors between different data sets
-  - Columns are consistent between datasets?
-- Script should be easily readable and editable if necessary by a lab tech/researcher with minimal coding knowledge
-  - Good documentation
-  - Requested changes should be achievable with minimal edits by lab tech/researcher
-- Result should output clean Markov Chain graphs
-  - Clear node and arrow labeling
-  - Behaviors' colors grouped by category?
+----------------------------------
 
+## Details
+- Reads CSV files containing relevant fish data, and creates transition matrices based on said data
+- Created transition matrices are grouped by either time, behavioral category, or left as is (basic)
+    - Time grouped matrices are partitioned into multiple matrices by the hour in which each behavior occurred for the first 3 hours of the recorded data
+    - Behavior category grouped matrices visually group and color behavior nodes together by the category they belong to
+- Every part of a given matrix represents some aspect of the provided data
+    - Behavior node sizes are set according to how often a given behavior occurred throughout the recorded data (i.e. more frequently occurring behaviors have larger nodes)
+    - Transition arrow widths are set according to the ratios of a given behavior transitioning to another behavior
+- Behavior node colors can be set by the user via a provided color mapping
+- Capable of accepting a JSON Job Configuration file that will auto process multiple sets of data as separate job runs (see section *Using a Job Config File* of this README)
+  with
+- Creates Key Legends displaying which colored nodes map to each behavior
+- Outputs the original Graphviz code generated to create the transition matrices
 
-Project Questions:
-- Do different video ID's imply different fish recorded?
-  - Differentiate between different videos?
-- How many fish are involved in the dataset (currently assuming 2 fish)?
-- What is the Status column?
-- Differentiate between Dominant and Subordinate behaviors
-  - Should Markov Chain separate Dominant's behaviors from Subordinate behaviors into their own graphs? (I assume no)
-  - How to handle doubled up actions (i.e. two Subordinate's behaviors followed up by the Dominant's behavior)?
+----------------------------------
 
+## Initial Environment Set Up
+1. Download and Install the latest version of [Python](https://www.python.org/downloads/)
+2. Download and Install the latest version of [Graphviz](https://graphviz.org/download/)
+    - Follow the download instructions according to your operating system
+3. Clone this repository by running `git clone git@github.com:QCAlvaradoLab/BlueYellowBehavior.git` in your terminal/command-line, or by downloading and opening the Zip file
+4. Using the terminal/command-line, navigate to the inside of this folder and run `python3 -m pip install -r requirements.txt`
+    - **Optionally BEFORE running the above command, you can set up a virtual environment for separation of concerns by running the commands below in order**
+        - `python3 -m venv .venv`
+        - If using Windows: `.venv\Scripts\activate`
+        - If using MacOS/Linux: `source .venv/bin/activate`
+        - To exit this virtual environment run `deactivate` in the terminal/command-line
+    - This installs the necessary python modules for running the code
 
-Tasks for next week:
-- Darker colors for nodes in past graphs (hourly and regular for all fish combos)
-- Andrew's graphs with white background and darker colors + fix weird red colors
-- Readme for this
-- add bullet point details to the paper
+----------------------------------
 
-- main libraries used as seen in requirements.txt file:
-  - graphviz: v0.20.3
-  - pandas: v2.2.3
-- libraries used as dependencies for graphviz and pandas (probably unnecessary to include since I don't actually import them, but here they are anyway):
-  - numpy: v2.1.2
-  - python-dateutil: v2.9.0.post0
-  - pytz: v2024.2
-  - six: v1.16.0
-  - tzdata: v2024.2
-- implementation:
-  - loaded each folder of csv files containing relevant data into pandas dataframes for formatting/organization
-    - csv files represented different filming sessions of the same subject
-  - data was cleaned and organized to prevent discrepency errors
-  - data was aggregated into the following pandas dataframe schemas (schema changes depending on analysis type i.e. time, category, and/or as is):
-    - Behavior Dataframe: contains aggregated totals of all observed behaviors
-      - Columns available to all analysis types:
-        - BEHAVIOR: the behavior exhibited by the subject
-        - BEHAVIOR_COUNTS: the total count of a given behavior observed across all of the provided data
-        - BEHAVIOR_PROBABILITY: the percentage of how often a behavior was performed over the total count of all behaviors performed on a scale between 0 and 1
-          - if analyzing based on time/hourly performance, probabilities are split across different hours recorded
-      - Columns unique to time analysis:
-        - HOUR_PERFORMED: the hour in which a behavior was performed
-        - BEHAVIOR_TOTALS_BY_HOUR: the total count of a given behavior observed within a given hour in the recording
-      - Columns unique to category analysis:
-        - BEHAVIORAL_CATEGORY: the category in which a behavior falls under
-    - Transition Dataframe: contains aggregated totals for the different behavior transitions observed
-      - Columns available to all analysis types:
-        - BEHAVIOR: the behavior exhibited by the subject
-        - BEHAVIOR_NEXT: the following behavior (created for ease of access when creating the transitions)
-        - TRANSITION_COUNTS: the total count of transitions between a given behavior (BEHAVIOR) and another behavior (BEHAVIOR_NEXT) observed across all of the provided data
-        - BEHAVIOR_TOTALS: the total count of a given behavior amongst all of its possible transitions
-          - if analyzing based on time/hourly performance, the totals are split across different hours recorded
-        - TRANSITION_PROBABILITY: the percentage of how often a specific transition from one behavior to the next was observed over the total count of all transitions from a given behavior observed on a scale between 0 and 1
-          - if analyzing based on time/hourly performance, probabilities are split across different hours recorded
-      - Columns unique to time analysis:
-        - HOUR_PERFORMED: the hour in which a transition was observed
-      - Columns unique to category analysis:
-        - BEHAVIORAL_CATEGORY: the category in which a behavior (from the BEHAVIOR column) falls under
-  - made multiple markov chains using the Digraph function from the graphviz library
-    - graph nodes representing each behavior generated using data from Behavior Dataframe
-      - node sizes based on total occurrences across all behaviors
-        - smaller = occurred less, larger = occurred more
-        - node sizes were clamped to specific values to prevent generated nodes from being too big or too small
-      - node positions determined by graphviz "dot" graphics engine to create optimal placements
-      - node colors chosen arbitrarily unless grouping by category
-        - if grouped by category, node colors become gradient based on a color assigned to the given category
-          - nodes for aggressive behaviors were a shade of red
-          - nodes for reproductive behaviors were a shade of green
-          - nodes for aversive behaviors were a shade of blue
-    - directed graph connections representing behavior transitions generated using data from Transition Dataframe
-      - connection widths based on total occurrences across all transitions from a given behavior
-        - smaller = occurred less, larger = occurred more
-        - connection widths were clamped to specific values to prevent generated connections from being too wide or too thin
-      - connection colors based on the node it comes from unless grouping by category
-        - for example: a directed connection from a purple node to a pink node will be purple in color
-        - if grouped by category, connection colors are based on color assigned to a given category
-          - connections between aggressive behavior nodes are red
-          - connections between reproductive behavior nodes are green
-          - connections between aversive behavior nodes are blue
-          - connections between behavior nodes of different categories are black
-    - additional legend created for each chain showing corresponding behavior colors and how often the behavior occurred
-  - markov chain graphs exported as separate jpeg files based on subject, environment, and analysis type
-    - 4 base analysis graphs
-      - blue subject - blue env
-      - blue subject - yellow env
-      - yellow subject - blue env
-      - yellow subject - yellow env
-    - 12 time analysis graphs
-      - graphs were separated by hour, ignoring any behaviors happening past the 4th hour
-      - same as base analysis but each one split into 3 graphs
-    - 2 category analysis graphs
-      - environment argument unnecessary
-      - blue subject
-      - yellow subject
-  - currently graphs generated use hard coded file inputs, but ideally would be updated to handle custom user input
+## Running and Editing Scripts
+
+### Using the Code as Is
+To run the code as is, simply replace the values for the `input` and `output` variables on lines 43 and 44 in `main.py` with the
+file paths to the folder containing the relevant data you wish to input, and then run `python3 main.py` in your
+terminal/command-line. This will create transition matrices for basic, time, and behavioral category groupings,
+as well as their corresponding legends and Graphviz code and place them in the provided output folder.
+
+&nbsp;
+
+### Using a Job Config File
+The Job Config File is in JSON format and uses the following structure
+```json
+{
+  "jobs": [
+    {
+      "input_folder": "some/input/data_folder/path",
+      "output_folder": "some/output/data_folder/path"
+      "job_name": "Some Job Name",
+      "subject": "blue | yellow",
+      "environment": "blue | yellow",
+      "color_map": {
+        "behavior1": "hexcode or valid color name",
+        "behavior2": "hexcode or valid color name",
+        "behavior3": "hexcode or valid color name"
+        ...
+      },
+      "group_by": "basic | time | behavioral category",
+      "attach_legend": true | false
+    },
+    ...
+  ]
+}
+```
+Config Properties:
+- `jobs` = a list of dictionary objects representing a given processing job to run
+- `input_folder` = the relative path to the folder containing the data to be processed
+- `output_folder` = the relative path to the folder to which the output matrices should be placed
+- `job_name` = the name of the job to be processed
+- `subject` = the subject fish of the data being process (only accepts 'blue' or 'yellow' as options)
+- `environment` = the color of the environment in which the subject has been placed (only accepts 'blue' or 'yellow' as options)
+- `color_map` = a dictionary object that maps all unique behaviors that occurred to a specific color (matrix nodes will appear with their mapped colors)
+- `group_by` = how the matrix should be partitioned or how nodes should be grouped (only accepts 'basic', 'time', or 'behavioral category' as options)
+- `attach_legend` = a boolean that indicates if the generated key legend should be attached to the graph itself rather than be a separate svg file (defaults to false)
+
+To run the code with a config file, replace line 105 in `main.py` with `main()`. That section should now look like this:
+```python
+if __name__ == '__main__':
+    main()
+```
+Then run `python3 main.py <ConfigFilePath>` where "<ConfigFilePath>" is the relative path to the config file. The program should then start processing
+each job specified in the config file. For a good example of a sample job config file, see `configs/sample_job_config.json` in this repository
