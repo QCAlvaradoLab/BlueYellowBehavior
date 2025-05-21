@@ -46,20 +46,25 @@ class BehaviorTransitionData:
         graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
         behavior_list: list[list[tuple[str, str, str, float]]] = [[]]
         color_map_categorical = {
-            'AGGRESSIVE': '#ff0000',
-            'REPRODUCTIVE': '#00ff00',
-            'AVERSIVE': '#0000ff'
+            'AGGRESSIVE': '#ff0000', # red
+            'REPRODUCTIVE': '#00ff00', # green
+            'AVERSIVE': '#aa00ff', # purple
+            'DEFAULT': '000000', # black
+            'ENV_YELLOW': self.color_map['ENV_YELLOW'],
+            'ENV_BLUE': self.color_map['ENV_BLUE'],
         }
         behavior_map = {}
         sub_graphs: dict[str, gv.Digraph] = dict()
         if self.group_by == 'BEHAVIORAL_CATEGORY':
             behavior_map = map_two_columns(self.behavior_df, 'BEHAVIOR', 'BEHAVIORAL_CATEGORY')
+            self.color_map = color_map_categorical
 
         for idx, row in self.behavior_df.iterrows():
             behavior_name = str(row['BEHAVIOR'])
             category_name = str(row[const.BEHAVIORAL_CATEGORY]) if self.group_by == const.BEHAVIORAL_CATEGORY else 'None'
 
-            color_to_use = self.__get_color(behavior_name)
+            color_key_to_use = category_name if self.group_by == const.BEHAVIORAL_CATEGORY else behavior_name
+            color_to_use = self.__get_color(color_key_to_use)
 
             raw_frequency = row['BEHAVIOR_PROBABILITY']
             prob = round_percent(raw_frequency)
@@ -110,7 +115,13 @@ class BehaviorTransitionData:
             current_behavior = str(row['BEHAVIOR'])
             next_behavior = str(row['BEHAVIOR_NEXT'])
 
-            color_to_use = self.__get_color(current_behavior)
+            color_key_to_use = current_behavior
+            if self.group_by == 'BEHAVIORAL_CATEGORY':
+                current_category_name = str(row[const.BEHAVIORAL_CATEGORY])
+                next_category_name = behavior_map.get(next_behavior) # behavior_map was populated prior to node creation
+                color_key_to_use = self.__get_color(current_category_name) if current_category_name == next_category_name else 'DEFAULT'
+
+            color_to_use = self.__get_color(color_key_to_use)
 
             raw_frequency = row['TRANSITION_PROBABILITY']
             weight = round_percent(raw_frequency)
@@ -236,8 +247,8 @@ class BehaviorTransitionData:
 
         g = gv.Digraph(graph_title)
         label = f'{graph_title}: Transition Probability >{self.edge_visibility_threshold * 100}%'
-        bgcolor = 'DEFAULT' if self.group_by == 'BEHAVIORAL_CATEGORY' else f'ENV_{self.environment.upper()}'
-        bgcolor = self.__get_color(bgcolor)
+        bgcolor = None if self.group_by == 'BEHAVIORAL_CATEGORY' else f'ENV_{self.environment.upper()}'
+        bgcolor = self.__get_color(bgcolor) if bgcolor is not None else None
         g.attr(
             fixed_size='true',
             overlap='scale',
