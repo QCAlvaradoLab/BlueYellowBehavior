@@ -39,8 +39,11 @@ class BehaviorTransitionData:
         self.output_dir_path = output_dir_path
 
     def output_dfs_as_csvs(self):
-        self.transition_df.to_csv(f'{self.output_dir_path}/{self.group_by}/transition_df.csv', index=False)
-        self.behavior_df.to_csv(f'{self.output_dir_path}/{self.group_by}/behavior_df.csv', index=False)
+        output_dir = f'{self.output_dir_path}/{self.group_by}'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        self.transition_df.to_csv(f'{output_dir}/transition_df.csv', index=False)
+        self.behavior_df.to_csv(f'{output_dir}/behavior_df.csv', index=False)
 
     def create_markov_chain_graph(self, attach_legend: bool | None = None):
         graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
