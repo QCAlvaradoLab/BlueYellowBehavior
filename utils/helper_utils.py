@@ -209,17 +209,88 @@ class BehaviorTransitionData:
                 label = "";
                 Legend [shape=none, margin=0, padding=0, label=<
                     <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
-                            <tr>
-                                <td><b>Behavior</b></td>
-                                {f"<td><b>Frequency</b></td>" if show_freqency is True else ""}
-                                {f"<td><b>Category</b></td>" if show_category is True else ""}
-                                <td><b>Color</b></td>
-                            </tr>
+                        <tr>
+                            <td><b>Behavior</b></td>
+                            {f"<td><b>Frequency</b></td>" if show_freqency is True else ""}
+                            {f"<td><b>Category</b></td>" if show_category is True else ""}
+                            <td><b>Color</b></td>
+                        </tr>
                         {"\n".join(formatted)}
                     </TABLE>
                 >];
             }}
         }}''')
+
+    def create_transition_state_table(self):
+        sort_by_vals = ['BEHAVIOR', 'BEHAVIOR_NEXT']
+        if self.group_by == 'TIME':
+            # sort by hour first to group together rows happening in the same hour
+            sort_by_vals = ['HOUR_PERFORMED', 'BEHAVIOR', 'BEHAVIOR_NEXT']
+
+        tdf = self.transition_df.copy()
+        tdf.sort_values(by=sort_by_vals, inplace=True)
+
+        formatted = []
+        for _, row in tdf.iterrows():
+            behavior = str(row['BEHAVIOR']).lower().capitalize().split('_')
+            if behavior[-1] == '\\u2640': # weird formatting issue that needs to be fixed manually here
+                behavior[-1] = str('\u2640')
+            elif behavior[-1] == '\\u2642':
+                behavior[-1] = str('\u2642')
+            fixed_behavior = " ".join(behavior)
+
+            behavior_next = str(row['BEHAVIOR_NEXT']).lower().capitalize().split('_')
+            if behavior_next[-1] == '\\u2640': # same as before
+                behavior_next[-1] = str('\u2640')
+            elif behavior_next[-1] == '\\u2642':
+                behavior_next[-1] = str('\u2642')
+            fixed_behavior_next = " ".join(behavior_next)
+
+            raw_frequency = row['TRANSITION_PROBABILITY']
+            if raw_frequency < self.edge_visibility_threshold:
+                continue
+
+            frequency = round_percent(raw_frequency, sig_figures=2)
+            total_count = int(row['TRANSITION_COUNTS'])
+
+            formatted.append(f'''<tr>
+                <td>{fixed_behavior} -- {fixed_behavior_next}</td>
+                <td>{frequency}%</td>
+                <td>{total_count}</td>
+                {f"<td>{int(row["HOUR_PERFORMED"])}</td>" if self.group_by == "TIME" else ""}
+            </tr>''')
+
+        source_str = gv.Source(f'''digraph {{
+            subgraph {{
+                bgcolor = "white";
+                rank = sink;
+                margin = 0;
+                label = "";
+                Legend [shape=none, margin=0, padding=0, label=<
+                    <table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+                        <tr>
+                            <td><b>Transition</b></td>
+                            <td><b>Frequency</b></td>
+                            <td><b>Total Count{" (by Hour)" if self.group_by == "TIME" else ""}</b></td>
+                            {"<td><b>Time Observed (by Hour)</b></td>" if self.group_by == "TIME" else ""}
+                        </tr>
+                        {"\n".join(formatted)}
+                    </table>
+                >]
+            }}
+        }}''')
+
+        output_dir = f"{self.output_dir_path}/{self.group_by}"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        file_name = f'{self.subject}Fish{f"_{self.environment}Env" if len(self.environment) else ""}'
+        source_str.render(
+            filename=f'{output_dir}/{file_name}_Transition_Table',
+            quiet=True,
+            format='svg',
+            cleanup=True
+        )
 
 
     def __get_color(self, key: str, default: str = 'antiquewhite') -> str:
