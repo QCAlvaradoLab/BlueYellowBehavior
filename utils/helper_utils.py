@@ -39,11 +39,27 @@ class BehaviorTransitionData:
         self.output_dir_path = output_dir_path
 
     def output_dfs_as_csvs(self):
+        sort_by_vals_bdf = ['BEHAVIOR']
+        sort_by_vals_tdf = ['BEHAVIOR', 'BEHAVIOR_NEXT']
+        if self.group_by == 'TIME':
+            # sort by hour first to group together rows happening in the same hour
+            sort_by_vals_bdf = ['HOUR_PERFORMED', 'BEHAVIOR']
+            sort_by_vals_tdf = ['HOUR_PERFORMED', 'BEHAVIOR', 'BEHAVIOR_NEXT']
+
+        behaviors_copy = self.behavior_df.copy()
+        transitions_copy = self.transition_df.copy()
+
+        behaviors_copy.sort_values(by=sort_by_vals_bdf, inplace=True)
+        transitions_copy.sort_values(by=sort_by_vals_tdf, inplace=True)
+
         output_dir = f'{self.output_dir_path}/{self.group_by}'
+        environment_append = f'{self.environment}Env' if self.group_by != 'BEHAVIORAL_CATEGORY' else 'BehaviorCategory'
+        file_name = f'{self.subject}Fish_{environment_append}'
+
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        self.transition_df.to_csv(f'{output_dir}/transition_df.csv', index=False)
-        self.behavior_df.to_csv(f'{output_dir}/behavior_df.csv', index=False)
+        behaviors_copy.to_csv(f'{output_dir}/{file_name}_Behavior_data.csv', index=False)
+        transitions_copy.to_csv(f'{output_dir}/{file_name}_Transitions_data.csv', index=False)
 
     def create_markov_chain_graph(self, attach_legend: bool | None = None):
         graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
@@ -414,11 +430,12 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
         behavior_dataframe = pd.DataFrame(behavior_dataframe.groupby(['BEHAVIOR', 'HOUR_PERFORMED']).sum())
         behavior_dataframe.reset_index(level=[0, 1], inplace=True)
 
-        transition_dataframe['BEHAVIOR_TOTALS'] = transition_dataframe.groupby(['BEHAVIOR', 'HOUR_PERFORMED'])[['TRANSITION_COUNTS']].transform('sum')
-        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['BEHAVIOR_TOTALS']
+        transition_dataframe['TRANSITION_TOTALS'] = transition_dataframe.groupby(['BEHAVIOR', 'HOUR_PERFORMED'])[['TRANSITION_COUNTS']].transform('sum')
+        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['TRANSITION_TOTALS']
+        transition_dataframe['ALL_TRANSITION_TOTALS_BY_HOUR'] = transition_dataframe.groupby(['HOUR_PERFORMED'])[['TRANSITION_COUNTS']].transform('sum')
 
-        behavior_dataframe['BEHAVIOR_TOTALS_BY_HOUR'] = behavior_dataframe.groupby(['HOUR_PERFORMED'])[['BEHAVIOR_COUNTS']].transform('sum')
-        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['BEHAVIOR_TOTALS_BY_HOUR']
+        behavior_dataframe['ALL_BEHAVIOR_TOTALS_BY_HOUR'] = behavior_dataframe.groupby(['HOUR_PERFORMED'])[['BEHAVIOR_COUNTS']].transform('sum')
+        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['ALL_BEHAVIOR_TOTALS_BY_HOUR']
     elif group_by == const.BEHAVIORAL_CATEGORY:
         transition_dataframe = pd.DataFrame(transition_dataframe.groupby([const.BEHAVIOR, const.BEHAVIOR_NEXT, const.BEHAVIORAL_CATEGORY]).sum())
         transition_dataframe.reset_index(level=[0, 1, 2], inplace=True)
@@ -426,10 +443,12 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
         behavior_dataframe = pd.DataFrame(behavior_dataframe.groupby([const.BEHAVIOR, const.BEHAVIORAL_CATEGORY]).sum())
         behavior_dataframe.reset_index(level=[0, 1], inplace=True)
 
-        transition_dataframe['BEHAVIOR_TOTALS'] = transition_dataframe.groupby([const.BEHAVIOR, const.BEHAVIORAL_CATEGORY])[['TRANSITION_COUNTS']].transform('sum')
-        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['BEHAVIOR_TOTALS']
+        transition_dataframe['TRANSITION_TOTALS'] = transition_dataframe.groupby([const.BEHAVIOR, const.BEHAVIORAL_CATEGORY])[['TRANSITION_COUNTS']].transform('sum')
+        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['TRANSITION_TOTALS']
+        transition_dataframe['ALL_TRANSITIONS_TOTAL'] = transition_dataframe['TRANSITION_COUNTS'].sum()
 
-        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['BEHAVIOR_COUNTS'].sum()
+        behavior_dataframe['ALL_BEHAVIORS_TOTAL'] = behavior_dataframe['BEHAVIOR_COUNTS'].sum()
+        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['ALL_BEHAVIORS_TOTAL']
     else:
         transition_dataframe = pd.DataFrame(transition_dataframe.groupby(['BEHAVIOR', 'BEHAVIOR_NEXT']).sum())
         transition_dataframe.reset_index(level=[0, 1], inplace=True)
@@ -437,10 +456,12 @@ def format_data(df_map: dict[str, pd.DataFrame], group_by: str = '') -> tuple[pd
         behavior_dataframe = pd.DataFrame(behavior_dataframe.groupby(['BEHAVIOR']).sum())
         behavior_dataframe.reset_index(level=[0], inplace=True)
 
-        transition_dataframe['BEHAVIOR_TOTALS'] = transition_dataframe.groupby(['BEHAVIOR'])[['TRANSITION_COUNTS']].transform('sum')
-        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['BEHAVIOR_TOTALS']
+        transition_dataframe['TRANSITION_TOTALS'] = transition_dataframe.groupby(['BEHAVIOR'])[['TRANSITION_COUNTS']].transform('sum')
+        transition_dataframe['TRANSITION_PROBABILITY'] = transition_dataframe['TRANSITION_COUNTS'] / transition_dataframe['TRANSITION_TOTALS']
+        transition_dataframe['ALL_TRANSITIONS_TOTAL'] = transition_dataframe['TRANSITION_COUNTS'].sum()
 
-        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['BEHAVIOR_COUNTS'].sum()
+        behavior_dataframe['ALL_BEHAVIORS_TOTAL'] = behavior_dataframe['BEHAVIOR_COUNTS'].sum()
+        behavior_dataframe['BEHAVIOR_PROBABILITY'] = behavior_dataframe['BEHAVIOR_COUNTS'] / behavior_dataframe['ALL_BEHAVIORS_TOTAL']
 
     return (transition_dataframe, behavior_dataframe)
 
