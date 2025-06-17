@@ -65,9 +65,9 @@ class BehaviorTransitionData:
         graph_list: list[gv.Digraph] = [self.__init_new_digraph(add_label=True, hour=1 if self.group_by == 'TIME' else None)]
         behavior_list: list[list[tuple[str, str, str, float]]] = [[]]
         color_map_categorical = {
-            'AGGRESSIVE': '#ff0000', # red
-            'REPRODUCTIVE': '#00ff00', # green
-            'AVERSIVE': '#aa00ff', # purple
+            'AGGRESSIVE': '#e7298a', # pinkish red
+            'REPRODUCTIVE': '#a6ce69', # olive green
+            'AVERSIVE': '#8c564b', # brown
             'DEFAULT': '000000', # black
             'ENV_YELLOW': self.color_map['ENV_YELLOW'],
             'ENV_BLUE': self.color_map['ENV_BLUE'],
@@ -101,6 +101,9 @@ class BehaviorTransitionData:
                     height=str(raw_frequency),
                     shape='circle',
                     style='filled',
+                    penwidth='4',
+                    fillcolor='white',
+                    fixedsize='true',
                     width=str(node_size)
                 )
 
@@ -122,6 +125,9 @@ class BehaviorTransitionData:
                     height=str(raw_frequency),
                     shape='circle',
                     style='filled',
+                    penwidth='4',
+                    fillcolor='white',
+                    fixedsize='true',
                     width=str(node_size)
                 )
 
@@ -205,9 +211,9 @@ class BehaviorTransitionData:
             elif formatted_behavior[-1] == '\\u2642':
                 formatted_behavior[-1] = str('\u2642')
             formatted.append(f'''<tr>
-                <td>{" ".join(formatted_behavior)}</td>
-                    {f"<td>{freqency}%</td>" if show_freqency is True else ""}
-                    {f"<td>{category}</td>" if show_category is True else ""}
+                <td BGCOLOR="transparent">{" ".join(formatted_behavior)}</td>
+                    {f'<td BGCOLOR="transparent">{freqency}%</td>' if show_freqency is True else ""}
+                    {f'<td BGCOLOR="transparent">{category}</td>' if show_category is True else ""}
                     <td cellpadding="4">
                         <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
                             <TR>
@@ -219,14 +225,13 @@ class BehaviorTransitionData:
 
         return gv.Source(f'''digraph {{
             subgraph {{
-                bgcolor = "white";
                 rank = sink;
                 margin = 0;
                 label = "";
-                Legend [shape=none, margin=0, padding=0, label=<
-                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+                Legend [shape=none, margin=0, padding=0, bgcolor="transparent" label=<
+                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="transparent">
                         <tr>
-                            <td><b>Behavior</b></td>
+                            <td BGCOLOR="transparent"><b>Behavior</b></td>
                             {f"<td><b>Frequency</b></td>" if show_freqency is True else ""}
                             {f"<td><b>Category</b></td>" if show_category is True else ""}
                             <td><b>Color</b></td>
@@ -335,14 +340,15 @@ class BehaviorTransitionData:
         if hour is not None:
             graph_title += f' (Hour {hour})'
 
-        g = gv.Digraph(graph_title)
+        g = gv.Digraph(graph_title, engine='fdp')
         label = f'{graph_title}: Transition Probability >{self.edge_visibility_threshold * 100}%'
         bgcolor = None if self.group_by == 'BEHAVIORAL_CATEGORY' else f'ENV_{self.environment.upper()}'
         bgcolor = self.__get_color(bgcolor) if bgcolor is not None else None
         g.attr(
-            fixed_size='true',
+            fixedsize='true',
             overlap='scale',
             size='50',
+            ratio='0.8,1!',
             bgcolor=bgcolor,
             fontcolor='black',
             packMode='graph',
